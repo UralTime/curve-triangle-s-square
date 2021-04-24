@@ -1,34 +1,31 @@
 #include <stdio.h>
+#include <math.h>
 #define eps 0.001
 
-// тестовый пример из условия
+// пример треугольника из функций 5sinx, exp(2x-15), 2arctgx в районе отрезка [6;8.1]
 double f1 (double x) {
-    return (0.35 * x * x - 0.95 * x + 2.7);
-}
-double f3 (double x) {
-    return (3 * x + 1);
+    return exp(2 * x - 15);
 }
 double f2 (double x) {
-    return (1 / (x + 2));
+    return 5 * sin(x);
+}
+double f3 (double x) {
+    return 2 * atan(x);
 }
 double f1diff (double x) {
-    return (0.7 * x - 0.95);
-}
-double f3diff (double x) {
-    return 3;
+    return 2 * f1(x);
 }
 double f2diff (double x) {
-    return (-1 / ((x + 2) * (x + 2)));
+    return 5 * cos(x);
 }
-
-double abs (double x) {
-    return ((x < 0)? -x: x);
+double f3diff (double x) {
+    return 2 / (1 + x * x);
 }
 
 double root (double (*f)(double), double (*g)(double), double a, double b, double eps1,
              double (*fdiff)(double), double (*gdiff)(double)) {
     double mid = (a + b) / 2, x = b;
-    int F1diff = 1, F2diff = 1, cnt = 0; //знаки первой и второй производной у функции F(x)=f(x)-g(x)
+    int F1diff = 1, F2diff = 1; //знаки первой и второй производной у функции F(x)=f(x)-g(x)
     if (2 * (f(mid) - g(mid)) > f(a) - g(a) + f(b) - g(b))
         F2diff = -1;
     if (fdiff(mid) < gdiff(mid))
@@ -37,10 +34,12 @@ double root (double (*f)(double), double (*g)(double), double a, double b, doubl
         x = a;
         eps1 = -eps1; // знаки будем сравнивать у x и x+eps, приближение к корню слева
     }
+    //int cnt = 0;
     do {
         x -= (f(x) - g(x)) / (fdiff(x) - gdiff(x));
-        cnt++;
+        //cnt++;
     } while ((f(x) - g(x)) * (f(x - eps1) - g(x - eps1)) > 0);
+    //printf("we find root by %d steps ", cnt);
     return x;
 }
 
@@ -57,24 +56,24 @@ double integral (double (*f)(double), double a, double b, double eps2) {
             sum2 += f(x);
             x += 2 * delta;
         }
-        absdiff = abs(delta * (2 * sum1 - sum2));
+        absdiff = fabs(delta * (2 * sum1 - sum2));
         sum1 = sum2;
     } while (absdiff >= 3 * eps2); //правило Рунге
     return sum2 * delta;
 }
 
 double f12 (double x) {
-    return abs(f1(x) - f2(x));
+    return fabs(f1(x) - f2(x));
 }
 double f13 (double x) {
-    return abs(f1(x) - f3(x));
+    return fabs(f1(x) - f3(x));
 }
 
 int main () {
-    double root1 = root(f1, f2, -1.99, -1.3, eps / 2, f1diff, f2diff),
-        root2 = root(f2, f3, -1.99, 1, eps / 2, f2diff, f3diff),
-        root3 = root(f3, f1, -1.99, 1, eps / 2, f3diff, f1diff),
-        int1 = integral(f12, root1, root2, eps / 6),
+    double root1 = root(f1, f2, 6, 8.1, eps / 2, f1diff, f2diff),
+        root2 = root(f2, f3, 6, 8.1, eps / 2, f2diff, f3diff),
+        root3 = root(f3, f1, 6, 8.1, eps / 2, f3diff, f1diff),
+        int1 = integral(f12, root1 , root2, eps / 6),
         int2 = integral(f13, root2, root3, eps / 6);
     printf("root1 = %f\n", root1);
     printf("root2 = %f\n", root2);
