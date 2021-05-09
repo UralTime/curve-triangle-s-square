@@ -26,7 +26,6 @@ double dh1 (double x) { return 10 / x;}
 double dh2 (double x) { return 3 * x * x;}
 double dh3 (double x) { return 4 * x * x * x - 1;}
 
-int PRINT_ITERS = 0;
 double root (double (*f)(double), double (*g)(double), double a, double b, double eps1,
              double (*fdiff)(double), double (*gdiff)(double)) {
     double mid = (a + b) / 2, x = b;
@@ -39,13 +38,9 @@ double root (double (*f)(double), double (*g)(double), double a, double b, doubl
         x = a;
         eps1 = -eps1; // compare signs of x and x+eps, approximation from the left instead of right
     }
-    int iters = 0;
     do {
         x -= (f(x) - g(x)) / (fdiff(x) - gdiff(x));
-        iters++;
     } while (((f(x) - g(x)) * (f(x - eps1) - g(x - eps1)) > 0) || (fabs(f(x - eps1) - g(x - eps1)) > 1));
-    if (PRINT_ITERS)
-        printf("root is found by %d iterations\n", iters);
     return x;
 }
 
