@@ -12,22 +12,25 @@ b] функция F(x) имеет один изолированный корен
 либо <0).
 
 Functions:
+
     f1 = 0.35x^2 - 0.95x + 2.7
     f2 = 1 / (x + 2)
     f3 = 3x + 1
 
 General options:
+
     -help                show help message
     -points   (-p)       display intersection points
     -iters    (-i)       display number of iterations in root()
 
 Commands:
+
     test_root            test function root()
     test_integral        test function integral()
-
     Usage: program <command> [options]
 
 Command options:
+
     -a <value>           set a(left)
     -b <value>           set b(right)
     -eps <value>         set eps(precision)
@@ -40,6 +43,7 @@ Command options:
         -func <[1-3]>    specify function
 
 Examples:
+
     program -points -iters
     program test_integral -a -0.1 -b 0.5 -eps 0.02 -func 3
     program test_root -a -1 -b 1.01 -eps 0.1 -func1 3 -func2 1
