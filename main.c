@@ -1,34 +1,21 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #define eps 0.001
 
-// example from my task
-double ff1 (double x) { return (0.35 * x * x - 0.95 * x + 2.7);}
-double ff3 (double x) { return (3 * x + 1);}
-double ff2 (double x) { return (1 / (x + 2));}
-double ff1diff (double x) { return (0.7 * x - 0.95);}
-double ff3diff (double x) { return 3;}
-double ff2diff (double x) { return (-1 / ((x + 2) * (x + 2)));}
-double ff12 (double x) { return fabs(ff1(x) - ff2(x));}
-double ff13 (double x) { return fabs(ff1(x) - ff3(x));}
+extern double f1 (double x);
+extern double f2 (double x);
+extern double f3 (double x);
+extern double df1 (double x);
+extern double df2 (double x);
+extern double df3 (double x);
 
-// test examples
-double f1 (double x) { return exp(2 * x - 15);}
-double f2 (double x) { return 5 * sin(x);}
-double f3 (double x) { return 2 * atan(x);}
-double f1diff (double x) { return 2 * f1(x);}
-double f2diff (double x) { return 5 * cos(x);}
-double f3diff (double x) { return 2 / (1 + x * x);}
-double f12 (double x) { return fabs(f1(x) - f2(x));}
-double f13 (double x) { return fabs(f1(x) - f3(x));}
+enum {DEFAULT, TEST_ROOT, TEST_INTEGRAL};
 
-//final test example
-double h1 (double x) { return 10 * log(x);}
-double h2 (double x) { return x * x * x;}
-double h3 (double x) { return x * x * x * x - x - 20;}
-double h1diff (double x) { return 10 / x;}
-double h2diff (double x) { return 3 * x * x;}
-double h3diff (double x) { return 4 * x * x * x - 1;}
+int PRINT_POINTS = 0,
+        PRINT_ITERS = 0,
+        MODE = DEFAULT;
 
 double root (double (*f)(double), double (*g)(double), double a, double b, double eps1,
              double (*fdiff)(double), double (*gdiff)(double)) {
@@ -42,79 +29,157 @@ double root (double (*f)(double), double (*g)(double), double a, double b, doubl
         x = a;
         eps1 = -eps1; // compare signs of x and x+eps, approximation from the left instead of right
     }
-    //int cnt = 0;
+    int iters = 0;
     do {
         x -= (f(x) - g(x)) / (fdiff(x) - gdiff(x));
-        //cnt++;
+        iters++;
     } while (((f(x) - g(x)) * (f(x - eps1) - g(x - eps1)) > 0) || (fabs(f(x - eps1) - g(x - eps1)) > 1));
-    //printf("we find root by %d steps ", cnt);
+    if (PRINT_ITERS)
+        printf("root is found by %d iterations\n", iters);
+    if (PRINT_POINTS)
+        printf("intersection point: (%f, %f)\n", x, f(x));
     return x;
 }
 
 double integral (double (*f)(double), double a, double b, double eps2) {
     int n = 1; // numbers of splitting segments in [a,b]
-    double sum1 = (f(a) + f(b) / 2), sum2, absdiff, delta;  //integral = sum * delta
-                                    // sum = f(a)/2 + sumf(x_i) for i=1,...,n-1 + f(b)/2
+    double prev_sum = (f(a) + f(b) / 2), cur_sum, absdiff, delta;  //integral = cur_sum * delta
+                                    // cur_sum = f(a)/2 + prev_sumf(x_i) for i=1,...,n-1 + f(b)/2
     do {
         n *= 2;
-        sum2 = sum1;  //sum2 = sum1 + sum( f(middles of new splitting segments) )
+        cur_sum = prev_sum;  // cur_sum = prev_sum + sum( f(middles of new splitting segments) )
         delta = (b - a) / n;
         double x = a + delta;
         for (int k = 1; k <= n / 2; k++) {
-            sum2 += f(x);
+            cur_sum += f(x);
             x += 2 * delta;
         }
-        absdiff = fabs(delta * (2 * sum1 - sum2));
-        sum1 = sum2;
+        absdiff = fabs(delta * (2 * prev_sum - cur_sum));
+        prev_sum = cur_sum;
     } while (absdiff >= eps2 / 3); // Runge's rule
-    return sum2 * delta;
+    return cur_sum * delta;
 }
 
-void test (const char* s1, const char* s2, const char* s3, double a, double b, double expect, double res, double eps3) {
-    printf("Calculating %s for %s - %s in [%f; %f] with precision %f, expected result = %f, calculated result = %f\n", s3, s1, s2, a, b, eps3, expect, res);
-    if (fabs(res - expect) < eps3)
-        printf("calculating answer differs from expected answer less than %f, good!\n", eps3);
-    else
-        printf("calculating answer differs from expected answer more than %f, bad!\n", eps3);
-}
+const char *help_text =         // if user types "help", he'll see this message
+"\
+Functions:\n\
+    f1 = 0.35x^2 - 0.95x + 2.7\n\
+    f2 = 1 / (x + 2)\n\
+    f3 = 3x + 1\n\
+\n\
+General options:\n\
+    -help                show help message\n\
+    -points              display intersection points\n\
+    -iters               display number of iterations in root()\n\
+\n\
+Commands:\n\
+    test_root            test function root()\n\
+    test_integral        test function integral()\n\
+\n\
+    Usage: program <command> [options]\n\
+\n\
+Command options:\n\
+    -a <value>           set a(left)\n\
+    -b <value>           set b(right)\n\
+    -eps <value>         set eps(precision)\n\
+\n\
+    only with test_root:\n\
+        -func1 <[1-3]>   specify first function\n\
+        -func2 <[1-3]>   specify second function\n\
+\n\
+    only with test_integral:\n\
+        -func <[1-3]>    specify function\n\
+\n\
+Examples:\n\
+    program -points -iters\n\
+    program test_integral -a -0.1 -b 0.5 -eps 0.02 -func 3\n\
+    program test_root -a -1 -b 1.01 -eps 0.1 -func1 3 -func2 1\n\
+";
 
-int main () {
-    double epss = eps / 10;
-    double root1 = root(f1, f2, 6, 8.1, epss, f1diff, f2diff),
-        root2 = root(f2, f3, 6, 8.1, epss, f2diff, f3diff),
-        root3 = root(f3, f1, 6, 8.1, epss, f3diff, f1diff),
-        int1 = integral(f12, root1 , root2, epss),
-        int2 = integral(f13, root2, root3, epss);
-    test("5sinx", "exp(2x-15)", "root", 6, 8.1, 6.301380, root1, epss);
-    test("2arctgx", "5sinx", "root", 6, 8.1, 6.890506, root2, epss);
-    test("2arctgx", "exp(2x-15)", "root", 6, 8.1, 8.031292, root3, epss);
-    test("5sinx", "exp(2x-15)", "integral", root1, root2, 0.790995, int1, epss);
-    test("2arctgx", "exp(2x-15)", "integral", root2, root3, 1.980160, int2, epss);
-    printf("Calculating curve triangle's square, expected result = 2.771155, calculating result = %f\n", int1 + int2);
-    if (fabs(int1 + int2 - 2.771155) < eps) printf("calculating answer differs from expected answer less then eps = 0.001, good!\n\n");
-    else printf("calculating answer differs from expected answer more then eps = 0.001, bad!\n\n");
-    printf("new test!\n");
-    root1 = root(ff1, ff2, -1.99, -1.3, epss, ff1diff, ff2diff),
-    root2 = root(ff2, ff3, -1.99, 1, epss, ff2diff, ff3diff),
-    root3 = root(ff3, ff1, -1.99, 1, epss, ff3diff, ff1diff),
-    int1 = integral(ff12, root1, root2, epss),
-    int2 = integral(ff13, root2, root3, epss);
-    test("0.35x^2 - 0.95x + 2.7", "1 / (x+2)", "root", -1.99, -1.3, -1.821140, root1, epss);
-    test("3x + 1", "1 / (x+2)", "root", -1.99, 1, -0.152872, root2, epss);
-    test("0.35x^2 - 0.95x + 2.7", "(3x + 1)", "root", -1.99, 1, 0.448178, root3, epss);
-    test("0.35x^2 - 0.95x + 2.7", "1 / (x+2)", "integral", root1, root2, 4.438040, int1, epss);
-    test("0.35x^2 - 0.95x + 2.7", "(3x + 1)", "integral", root2, root3, 0.682157, int2, epss);
-    printf("Calculating curve triangle's square, expected result = 5.120197, calculating result = %f\n", int1 + int2);
-    if (fabs(int1 + int2 - 5.120197) < eps) printf("calculating answer differs from expected answer less then eps = 0.001, good!\n\n");
-    else printf("calculating answer differs from expected answer more then eps = 0.001, bad!\n\n");
-    printf("new test, not triangle's square, just roots and integrals!\n");
-    root1 = root(h1, h2, 1, 1.5, epss, h1diff, h2diff),
-    root2 = root(h2, h3, 2, 3, epss, h2diff, h3diff),
-    root3 = root(h3, h1, 2, 3, epss, h3diff, h1diff),
-    test("10lnx", "x^3", "root", 1, 1.5, 1.177194, root1, epss);
-    test("x^3", "(x^4 - x - 20)", "root", 2, 3, 2.477724, root2, epss);
-    test("10lnx", "(x^4 - x - 20)", "root", 2, 3, 2.35844, root3, epss);
-    test("lnx", "0", "integral", 1, 2, 3.862943, integral(h1, 1, 2, epss), epss);
-    test("x^4 - x - 20", "0", "integral", 3, 5, 528.40000, integral(h3, 3, 5, epss), epss);
+int main (int argc, char **argv) {
+    double epss = eps / 10, a = -1.99, b = 1;
+    double (*foo1)(double) = f1;
+    double (*foo2)(double) = f2;
+    double (*dfoo1)(double) = df1;
+    double (*dfoo2)(double) = df2;
+    if (argc > 1) {
+        if (!strcmp(argv[1], "-help")) {
+            printf("%s", help_text);
+            return 0;
+        }
+        for (int i = 1; i < argc; i++) {
+            if (!strcmp(argv[i], "-points") || !strcmp(argv[i], "-p"))
+                PRINT_POINTS = 1;
+            else if (!strcmp(argv[i], "-iters") || !strcmp(argv[i], "-i"))
+                PRINT_ITERS = 1;
+            else if (!strcmp(argv[i], "test_root"))
+                MODE = TEST_ROOT;
+            else if (!strcmp(argv[i], "test_integral"))
+                MODE = TEST_INTEGRAL;
+            else if (!strcmp(argv[i], "-a"))
+                a = strtod(argv[++i], NULL);    // next param - left bound of segment - from string to double
+            else if (!strcmp(argv[i], "-b"))
+                b = strtod(argv[++i], NULL);    // next param - right bound of segment - from string to double
+            else if (!strcmp(argv[i], "-eps"))
+                epss = strtod(argv[++i], NULL);  // next param - precision - from string to double
+            else if (!strcmp(argv[i], "-func1") || !strcmp(argv[i], "-func")) // choice func for test root or integral
+                switch (atoi(argv[++i])) {
+                    case 1:
+                        foo1 = f1;
+                        dfoo1 = df1;
+                        break;
+                    case 2:
+                        foo1 = f2;
+                        dfoo1 = df2;
+                        break;
+                    case 3:
+                        foo1 = f3;
+                        dfoo1 = df3;
+                }
+            else if (!strcmp(argv[i], "-func2"))   //choice func for test root or integral
+                switch (atoi(argv[++i])) {
+                    case 1:
+                        foo2 = f1;
+                        dfoo2 = df1;
+                        break;
+                    case 2:
+                        foo2 = f2;
+                        dfoo2 = df2;
+                        break;
+                    case 3:
+                        foo2 = f3;
+                        dfoo2 = df3;
+                }
+        }
+    }
+
+    if (MODE == TEST_ROOT) {
+        printf("a = %f, b = %f, eps = %f\n\n", a, b, epss);
+        double x = root(foo1, foo2, a, b, epss, dfoo1, dfoo2);
+        if (!PRINT_POINTS)
+            printf("Intersection point = (%f, %f)\n", x, foo1(x));
+    }
+
+    else if (MODE == TEST_INTEGRAL) {
+        printf("a = %f, b = %f, eps = %f\n\n", a, b, epss);
+        printf("Integral = %f\n", integral(foo1, a, b, epss));
+    }
+    else { // MODE == DEFAULT
+        printf("a = %f, b = %f, eps1 = eps2 = %f\n", a, b, epss);
+        double root12, root13, root23;
+        if (PRINT_POINTS || PRINT_ITERS)
+            printf("\nf1 & f2\n");
+        root12 = root(f1, f2, a, -1.3, epss, df1, df2);
+        if (PRINT_POINTS || PRINT_ITERS)
+            printf("\nf1 & f3\n");
+        root13 = root(f1, f3, a, b, epss, df1, df3);
+        if (PRINT_POINTS || PRINT_ITERS)
+            printf("\nf2 & f3\n");
+        root23 = root(f2, f3, a, b, epss, df2, df3);
+        double int1 = integral(f1, root12, root13, epss), int2 = integral(f2, root12, root23, epss),
+        int3 = integral(f3, root23, root13, epss), ans = int1 - int2 - int3;
+        printf("\n int1 = %f \n int2 = %f \n int3 = %f \n", int1, int2, int3);
+        printf("\n Result integral = %f \n", ans);
+    }
     return 0;
 }
