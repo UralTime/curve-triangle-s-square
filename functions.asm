@@ -8,7 +8,8 @@ section .data
     three dq 3
     
 section .text    
-global f1: ;x * (0.35x - 0.95) + 2.7
+global f1
+f1: ;x * (0.35x - 0.95) + 2.7
     push    ebp
     mov     ebp, esp
     fld     qword[ebp+8]
@@ -23,7 +24,8 @@ global f1: ;x * (0.35x - 0.95) + 2.7
     leave
     ret
 
-global f2: ;1 / (x + 2)
+global f2
+f2: ;1 / (x + 2)
     push    ebp
     mov     ebp, esp
     fild    qword[one]
@@ -34,7 +36,8 @@ global f2: ;1 / (x + 2)
     leave
     ret
     
-global f3: ;3x + 1
+global f3
+f3: ;3x + 1
     push    ebp
     mov     ebp, esp
     fild    qword[three]
@@ -45,7 +48,8 @@ global f3: ;3x + 1
     leave
     ret
     
-global df1: ;0.7x - 0.95
+global df1
+df1: ;0.7x - 0.95
     push    ebp
     mov     ebp, esp
     fld     qword[d]
@@ -56,7 +60,8 @@ global df1: ;0.7x - 0.95
     leave
     ret
     
-global df2: ;-1 / (x + 2)^2
+global df2
+df2: ;-1 / (x + 2)^2
     push    ebp
     mov     ebp, esp
     fild    qword[one]
@@ -72,7 +77,8 @@ global df2: ;-1 / (x + 2)^2
     leave
     ret
     
-global df3: ;3
+global df3
+df3: ;3
     push    ebp
     mov     ebp, esp
     fild    qword[three]
