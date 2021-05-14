@@ -121,22 +121,21 @@ const char *verbose_text =
      This point is taken as the next approximation. And so on, until the required accuracy is achieved.\
 ";
 
-/*
 //first test example
 double g1 (double x) { return exp(2 * x - 15);}
 double g2 (double x) { return 5 * sin(x);}
 double g3 (double x) { return 2 * atan(x);}
 double dg1 (double x) { return 2 * exp(2 * x - 15);}
 double dg2 (double x) { return 5 * cos(x);}
-double dg3 (double x) { return 2 / (1 + x * x);}
+double dg3 (double x) { return 2 / (1 + x * x);
 
-// second test example
+second test example
 double h1 (double x) { return 10 * log(x);}
 double h2 (double x) { return x * x * x;}
 double h3 (double x) { return x * x * x * x - x - 20;}
 double dh1 (double x) { return 10 / x;}
 double dh2 (double x) { return 3 * x * x;}
-double dh3 (double x) { return 4 * x * x * x - 1;}*/
+double dh3 (double x) { return 4 * x * x * x - 1;}
 
 void test (const char *mode, const char* func, double left, double right, double expect, double res, double eps1) {
     printf("%s of %s in [%f; %f], expected %f, calculated %f\n", mode, func, left, right, expect, res);
@@ -238,7 +237,7 @@ int main (int argc, char **argv) {
         printf("a = %f, b = %f, eps = %f\n\n", a, b, epss);
         printf("Integral = %f\n", integral(foo1, a, b, epss));
     }
-    /*else if (MODE == TEST_DEFAULT) {
+    else if (MODE == TEST_DEFAULT) {
         double root1 = root(g1, g2, 6, 8.1, epss, dg1, dg2), root2 = root(g2, g3, 6, 8.1, epss, dg2, dg3),
         root3 = root(g3, g1, 6, 8.1, epss, dg3, dg1),
         int1 = integral(g1, root1 , root3, epss), int2 = integral(g2, root1, root2, epss),
@@ -259,7 +258,7 @@ int main (int argc, char **argv) {
         test(mode_root, "x^4 - x - 20 - 10lnx", 2, 3, 2.35844, root3, epss);
         test(mode_int,"lnx", 1, 2, 3.862943, integral(h1, 1, 2, epss), epss);
         test(mode_int,"x^4 - x - 20", 3, 5, 528.40000, integral(h3, 3, 5, epss), epss);
-    }*/
+    }
     else { // MODE == DEFAULT
         printf("a = %f, b = %f, eps1 = eps2 = %f\n", a, b, epss);
         double root12, root13, root23;
