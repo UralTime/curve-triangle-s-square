@@ -127,7 +127,7 @@ double g2 (double x) { return 5 * sin(x);}
 double g3 (double x) { return 2 * atan(x);}
 double dg1 (double x) { return 2 * exp(2 * x - 15);}
 double dg2 (double x) { return 5 * cos(x);}
-double dg3 (double x) { return 2 / (1 + x * x);
+double dg3 (double x) { return 2 / (1 + x * x);}
 
 second test example
 double h1 (double x) { return 10 * log(x);}
