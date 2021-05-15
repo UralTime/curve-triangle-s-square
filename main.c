@@ -137,6 +137,7 @@ void test (const char *mode, const char* func, double left, double right, double
 int main (int argc, char **argv) {
     double epss = eps / 10, a = -1.99, b = 1;
     const char *mode_root = "root", *mode_int = "integral";
+    char *errs;
     double (*foo1)(double) = f1;
     double (*foo2)(double) = f2;
     double (*dfoo1)(double) = df1;
@@ -158,62 +159,77 @@ int main (int argc, char **argv) {
             else if (!strcmp(argv[i], "test_default"))
                 MODE = TEST_DEFAULT;
             else if (!strcmp(argv[i], "-a")) {
-                a = strtod(argv[++i], NULL);    // next param - left bound of segment - from string to double
-                if (errno == ERANGE) {
-                    printf("incorrect a\n");
+                a = strtod(argv[++i], &errs);    // next param - left bound of segment - from string to double
+                if ((errno == ERANGE) || (a <= -1.999999) || (*errs != '\0')) {
+                    printf("please choice a > -2\n");
                     return 0;
                 }
             }
             else if (!strcmp(argv[i], "-b")) {
-                b = strtod(argv[++i], NULL);    // next param - right bound of segment - from string to double
-                if (errno == ERANGE) {
-                    printf("incorrect b!\n");
+                b = strtod(argv[++i], &errs);    // next param - right bound of segment - from string to double
+                if ((errno == ERANGE) || (b > 2) || (*errs != '\0')) {
+                    printf("please choice b <= 2!\n");
                     return 0;
                 }
             }
             else if (!strcmp(argv[i], "-eps")) {
-                epss = strtod(argv[++i], NULL);  // next param - precision - from string to double
-                if ((errno == ERANGE) || (epss <= 0.0000001) || (epss >= 1)) {
-                    printf("incorrect eps!\n");
+                epss = strtod(argv[++i], &errs);  // next param - precision - from string to double
+                if ((errno == ERANGE) || (epss <= 0.000001) || (epss >= 1) || (*errs != '\0')) {
+                    printf("please choice eps between 0.000001 and 1!\n");
+                    return 0;
+                }
+                epss /= 10;     // epss = eps/10
+            }
+            else if (!strcmp(argv[i], "-func1") || !strcmp(argv[i], "-func")) { // choice func for test root or integral
+                i++;                
+                if (strlen(argv[i]) == 1)
+                    switch (atoi(argv[i])) {
+                        case 1:
+                            foo1 = f1;
+                            dfoo1 = df1;
+                            break;
+                        case 2:
+                            foo1 = f2;
+                            dfoo1 = df2;
+                            break;
+                        case 3:
+                            foo1 = f3;
+                            dfoo1 = df3;
+                            break;
+                        default:
+                            printf("incorrect number of foo1!\n");
+                            return 0;
+                    }
+                else {
+                    printf("incorrect number of foo1!\n");                    
                     return 0;
                 }
             }
-            else if (!strcmp(argv[i], "-func1") || !strcmp(argv[i], "-func")) // choice func for test root or integral
-                switch (atoi(argv[++i])) {
-                    case 1:
-                        foo1 = f1;
-                        dfoo1 = df1;
-                        break;
-                    case 2:
-                        foo1 = f2;
-                        dfoo1 = df2;
-                        break;
-                    case 3:
-                        foo1 = f3;
-                        dfoo1 = df3;
-                        break;
-                    default:
-                        printf("incorrect number of foo1!\n");
-                        return 0;
+            else if (!strcmp(argv[i], "-func2")) {  //choice func for test root or integral
+                i++;                
+                if (strlen(argv[i]) == 1)             
+                    switch (atoi(argv[i])) {
+                        case 1:
+                            foo2 = f1;
+                            dfoo2 = df1;
+                            break;
+                        case 2:
+                            foo2 = f2;
+                            dfoo2 = df2;
+                            break;
+                        case 3:
+                            foo2 = f3;
+                            dfoo2 = df3;
+                            break;
+                        default:
+                            printf("incorrect number of foo2!\n");
+                            return 0;
+                    }
+                else {
+                    printf("incorrect number of foo2!\n");
+                    return 0;
                 }
-            else if (!strcmp(argv[i], "-func2"))   //choice func for test root or integral
-                switch (atoi(argv[++i])) {
-                    case 1:
-                        foo2 = f1;
-                        dfoo2 = df1;
-                        break;
-                    case 2:
-                        foo2 = f2;
-                        dfoo2 = df2;
-                        break;
-                    case 3:
-                        foo2 = f3;
-                        dfoo2 = df3;
-                        break;
-                    default:
-                        printf("incorrect number of foo2!\n");
-                        return 0;
-                }
+            }
         }
     if (a > b) {
         printf("incorrect input: a > b!\n");
