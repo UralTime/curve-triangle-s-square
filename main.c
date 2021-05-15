@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <errno.h>
 #define eps 0.001
 
 extern double f1 (double x);
@@ -69,7 +70,7 @@ Functions:\n\
 \n\
 General options:\n\
     -help                show help message\n\
-    -verbose (-v)        show detailed information about mission of the program\n\
+    -verbose (-v)        show information about mission of the program\n\
     -points (-p)         display intersection points\n\
     -iters  (-i)         display number of iterations in root()\n\
 \n\
@@ -96,29 +97,17 @@ Examples:\n\
     program -points -iters\n\
     program test_integral -a -0.1 -b 0.5 -eps 0.02 -func 3\n\
     program test_root -a -1 -b 1.01 -eps 0.1 -func1 3 -func2 1\n\
+\n\
 ";
 
 const char *verbose_text =
-"\
-    In this project, it was required to implement a numerical method that allows, with a given precision eps,\n\
-    to calculate the area of a plane figure bounded by three curves, the equations\n\
-    which f1 (x) = 0.35 x ^ 2 -0.95 x + 2.7, f2 (x) = 3 x + 1, f3 (x) = 1 / (x + 2)\n\
-    the calculation of the function values had to be implemented using the NASM assembler.\n\
-    To find the area, the trapezoid method was used - a method which consists in replacing the integrand on each\n\
-    elementary segment with a polynomial of the first degree, that is, a linear function. The area under the graph of\n\
-    the function with this approach is approximated by rectangular trapezoids.\n\
+"Calculating area between functions f1 (x) = 0.35x^2 -0.95x + 2.7, f2 (x) = 3x + 1, f3 (x) = 1 / (x + 2),\n\
+intersections are found by trapezoid method, integrating is done using Newton's method\n\
+On the segment [a, b], the function f(x) - g(x) has one isolated root. \n\
+Such a segment should be chosen based on the analysis of the functions f(x) and g(x) and their derivatives.\n\
+The first and second derivatives of the function F (x) on the segment [a, b] are continuous and do not equal to zero,\n\
+that is, they have a constant sign (> 0 or <0).\n\
 \n\
-    Let clarify that F (x) is the function of the difference f (x) - g (x) on the segment [a, b],\n\
-    that is, the zeros of the function F (x) are the intersection points of the functions f(x) and g(x).\n\
-    On the segment [a, b], the function F (x) has one isolated root. Such a segment should be chosen based on\n\
-    the analysis of the functions f(x) and g(x) and their derivatives.\n\
-    The first and second derivatives of the function F (x) on the segment [a, b] are continuous and do not equal to zero\n\
-    ,that is, they have a constant sign (> 0 or <0).\n\
-\n\
-    Newton's method, also known as the Newton–Raphson method, was used to find the intersection points of the functions.\n\
-    The main idea of the method: an initial approximation is set near the supposed root, after which a tangent to the graph\n\
-    of the function under study is constructed at the approximation point, for which the intersection with the abscissa axis is found.\n\
-     This point is taken as the next approximation. And so on, until the required accuracy is achieved.\
 ";
 
 //first test example
@@ -129,7 +118,7 @@ double dg1 (double x) { return 2 * exp(2 * x - 15);}
 double dg2 (double x) { return 5 * cos(x);}
 double dg3 (double x) { return 2 / (1 + x * x);}
 
-second test example
+//second test example
 double h1 (double x) { return 10 * log(x);}
 double h2 (double x) { return x * x * x;}
 double h3 (double x) { return x * x * x * x - x - 20;}
@@ -152,16 +141,12 @@ int main (int argc, char **argv) {
     double (*foo2)(double) = f2;
     double (*dfoo1)(double) = df1;
     double (*dfoo2)(double) = df2;
-    if (argc > 1) {
-        if (!strcmp(argv[1], "-help")) {
-            printf("%s", help_text);
-            return 0;
-        }
-        if ((!strcmp(argv[1], "-verbose")) || (!strcmp(argv[1], "-v"))) {
-            printf("%s", verbose_text);
-            return 0;
-        }
+    if (argc > 1)
         for (int i = 1; i < argc; i++) {
+            if (!strcmp(argv[i], "-help"))
+                printf("%s", help_text);
+            if ((!strcmp(argv[i], "-verbose")) || (!strcmp(argv[1], "-v"))) 
+                printf("%s", verbose_text);
             if (!strcmp(argv[i], "-points") || !strcmp(argv[i], "-p"))
                 PRINT_POINTS = 1;
             else if (!strcmp(argv[i], "-iters") || !strcmp(argv[i], "-i"))
@@ -172,15 +157,25 @@ int main (int argc, char **argv) {
                 MODE = TEST_INTEGRAL;
             else if (!strcmp(argv[i], "test_default"))
                 MODE = TEST_DEFAULT;
-            else if (!strcmp(argv[i], "-a"))
+            else if (!strcmp(argv[i], "-a")) {
                 a = strtod(argv[++i], NULL);    // next param - left bound of segment - from string to double
-            else if (!strcmp(argv[i], "-b"))
+                if (errno == ERANGE) {
+                    printf("incorrect a\n");
+                    return 0;
+                }
+            }
+            else if (!strcmp(argv[i], "-b")) {
                 b = strtod(argv[++i], NULL);    // next param - right bound of segment - from string to double
+                if (errno == ERANGE) {
+                    printf("incorrect b!\n");
+                    return 0;
+                }
+            }
             else if (!strcmp(argv[i], "-eps")) {
                 epss = strtod(argv[++i], NULL);  // next param - precision - from string to double
-                if (epss <= 0) {
-                    printf("incorrect eps, program has set default eps = 0.001\n");
-                    epss = 0.001;
+                if ((errno == ERANGE) || (epss <= 0.0000001) || (epss >= 1)) {
+                    printf("incorrect eps!\n");
+                    return 0;
                 }
             }
             else if (!strcmp(argv[i], "-func1") || !strcmp(argv[i], "-func")) // choice func for test root or integral
@@ -198,7 +193,8 @@ int main (int argc, char **argv) {
                         dfoo1 = df3;
                         break;
                     default:
-                        printf("incorrect number of foo1, program has set previous value for func\n");
+                        printf("incorrect number of foo1!\n");
+                        return 0;
                 }
             else if (!strcmp(argv[i], "-func2"))   //choice func for test root or integral
                 switch (atoi(argv[++i])) {
@@ -215,14 +211,13 @@ int main (int argc, char **argv) {
                         dfoo2 = df3;
                         break;
                     default:
-                        printf("incorrect number of foo2, program has set previous value for func\n");
+                        printf("incorrect number of foo2!\n");
+                        return 0;
                 }
         }
-    }
     if (a > b) {
-        printf("incorrect input: a > b, program has set default a and b\n");
-        a = -1.99;
-        b = 1;
+        printf("incorrect input: a > b!\n");
+        return 0;
     }
     if (MODE == TEST_ROOT) {
         if (((f1 == foo1) && (f2 == foo2)) || ((f2 == foo1) && (f1 == foo2)))
@@ -232,7 +227,6 @@ int main (int argc, char **argv) {
         if (!PRINT_POINTS)
             printf("Intersection point = (%f, %f)\n", x, foo1(x));
     }
-
     else if (MODE == TEST_INTEGRAL) {
         printf("a = %f, b = %f, eps = %f\n\n", a, b, epss);
         printf("Integral = %f\n", integral(foo1, a, b, epss));
