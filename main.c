@@ -13,10 +13,7 @@ extern double df2 (double x);
 extern double df3 (double x);
 
 enum {DEFAULT, TEST_ROOT, TEST_INTEGRAL, TEST_DEFAULT};
-
-int PRINT_POINTS = 0,
-        PRINT_ITERS = 0,
-        MODE = DEFAULT;
+int PRINT_POINTS = 0, PRINT_ITERS = 0, MODE = DEFAULT;
 
 double root (double (*f)(double), double (*g)(double), double a, double b, double eps1,
              double (*fdiff)(double), double (*gdiff)(double)) {
@@ -101,8 +98,10 @@ Examples:\n\
 ";
 
 const char *verbose_text =
-"Calculating area between functions f1 (x) = 0.35x^2 -0.95x + 2.7, f2 (x) = 3x + 1, f3 (x) = 1 / (x + 2),\n\
+"Calculating area between functions f1(x) = 0.35x^2 -0.95x + 2.7, f2(x) = 3x + 1, f3(x) = 1 / (x + 2),\n\
+\n\
 intersections are found by trapezoid method, integrating is done using Newton's method\n\
+\n\
 On the segment [a, b], the function f(x) - g(x) has one isolated root. \n\
 Such a segment should be chosen based on the analysis of the functions f(x) and g(x) and their derivatives.\n\
 The first and second derivatives of the function F (x) on the segment [a, b] are continuous and do not equal to zero,\n\
@@ -137,7 +136,7 @@ void test (const char *mode, const char* func, double left, double right, double
 int main (int argc, char **argv) {
     double epss = eps / 10, a = -1.99, b = 1;
     const char *mode_root = "root", *mode_int = "integral";
-    char *errs;
+    char *errs, is_helped = 0, is_verbosed = 0;
     double (*foo1)(double) = f1;
     double (*foo2)(double) = f2;
     double (*dfoo1)(double) = df1;
@@ -145,9 +144,15 @@ int main (int argc, char **argv) {
     if (argc > 1)
         for (int i = 1; i < argc; i++) {
             if (!strcmp(argv[i], "-help"))
-                printf("%s", help_text);
-            if ((!strcmp(argv[i], "-verbose")) || (!strcmp(argv[1], "-v"))) 
-                printf("%s", verbose_text);
+                if (!is_helped) {
+                    printf("%s", help_text);
+                    is_helped = 1;
+                }
+            if ((!strcmp(argv[i], "-verbose")) || (!strcmp(argv[1], "-v")))
+                if (!is_verbosed) {
+                    printf("%s", verbose_text);
+                    is_verbosed = 1;
+                }
             if (!strcmp(argv[i], "-points") || !strcmp(argv[i], "-p"))
                 PRINT_POINTS = 1;
             else if (!strcmp(argv[i], "-iters") || !strcmp(argv[i], "-i"))
@@ -159,29 +164,39 @@ int main (int argc, char **argv) {
             else if (!strcmp(argv[i], "test_default"))
                 MODE = TEST_DEFAULT;
             else if (!strcmp(argv[i], "-a")) {
-                a = strtod(argv[++i], &errs);    // next param - left bound of segment - from string to double
+                i++;
+                if (i == argc)
+                    break;
+                a = strtod(argv[i], &errs);    // next param - left bound of segment - from string to double
                 if ((errno == ERANGE) || (a <= -1.999999) || (*errs != '\0')) {
                     printf("please choice a > -2\n");
                     return 0;
                 }
             }
             else if (!strcmp(argv[i], "-b")) {
-                b = strtod(argv[++i], &errs);    // next param - right bound of segment - from string to double
+                i++;
+                if (i == argc)
+                    break;
+                b = strtod(argv[i], &errs);    // next param - right bound of segment - from string to double
                 if ((errno == ERANGE) || (b > 2) || (*errs != '\0')) {
                     printf("please choice b <= 2!\n");
                     return 0;
                 }
             }
             else if (!strcmp(argv[i], "-eps")) {
-                epss = strtod(argv[++i], &errs);  // next param - precision - from string to double
-                if ((errno == ERANGE) || (epss <= 0.000001) || (epss >= 1) || (*errs != '\0')) {
-                    printf("please choice eps between 0.000001 and 1!\n");
+                i++;
+                if (i == argc)
+                    break;
+                epss = strtod(argv[i], &errs);  // next param - precision - from string to double
+                if ((errno == ERANGE) || (epss <= 0.000001) || (epss >= 0.1) || (*errs != '\0')) {
+                    printf("please choice eps between 0.000001 and 0.1!\n");
                     return 0;
                 }
-                epss /= 10;     // epss = eps/10
             }
             else if (!strcmp(argv[i], "-func1") || !strcmp(argv[i], "-func")) { // choice func for test root or integral
-                i++;                
+                i++;
+                if (i == argc)
+                    break;
                 if (strlen(argv[i]) == 1)
                     switch (atoi(argv[i])) {
                         case 1:
@@ -201,13 +216,15 @@ int main (int argc, char **argv) {
                             return 0;
                     }
                 else {
-                    printf("incorrect number of foo1!\n");                    
+                    printf("incorrect number of foo1!\n");
                     return 0;
                 }
             }
             else if (!strcmp(argv[i], "-func2")) {  //choice func for test root or integral
-                i++;                
-                if (strlen(argv[i]) == 1)             
+                i++;
+                if (i == argc)
+                    break;
+                if (strlen(argv[i]) == 1)
                     switch (atoi(argv[i])) {
                         case 1:
                             foo2 = f1;
@@ -258,7 +275,6 @@ int main (int argc, char **argv) {
         test(mode_int, "e^(2x - 15)", root1, root3, 1.40144, int1, epss);
         test(mode_int, "5sinx", root1, root2, 0.893273, int2, epss);
         test(mode_int, "2arctgx", root2, root3, 3.27932, int3, epss);
-
         printf("another test!\n");
         root1 = root(h1, h2, 1, 1.5, epss, dh1, dh2),
         root2 = root(h2, h3, 2, 3, epss, dh2, dh3),
